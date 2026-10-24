@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en-IN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel King Choice | Future Hotel Under Construction in Ambernath West</title>
+    <meta name="description" content="Hotel King Choice in Chikhloli, Ambernath West, Maharashtra is currently under construction. Planned room categories: Deluxe, Super Deluxe, and Suite. Call +91 9699066190 for future-stay enquiries.">
+    <link rel="canonical" href="https://kingchoicehotel.com/">
+
+    <!-- Google Fonts: Cormorant Garamond (Editorial Luxury) & Plus Jakarta Sans (Gen-Z Clean UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        forest: {
+                            950: '#091913',
+                            900: '#0F261E',
+                            800: '#143328',
+                            700: '#1B4332',
+                        },
+                        cream: {
+                            50: '#FDFBF7',
+                            100: '#FAF6F0',
+                            200: '#F2ECE1',
+                            300: '#E4DAC8',
+                        },
+                        gold: {
+                            400: '#CDA656',
+                            500: '#B68D40',
+                            600: '#96712B',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- React 18 Production & Babel Standalone -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-cream-100 text-forest-950 font-sans antialiased selection:bg-gold-500 selection:text-forest-950">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const FALLBACK_ROOMS = [
+            {
+                id: 1,
+                slug: 'deluxe',
+                name: 'Deluxe Room',
+                short_summary: 'Planned core guest room category designed for restful sleep, quiet acoustic comfort, and practical everyday convenience.',
+                planned_quantity: 14,
+                is_inventory_verified: 0,
+                vibe_tag: 'Core Restful Stay',
+                concept_hue: 'from-forest-900 via-forest-800 to-forest-700'
+            },
+            {
+                id: 2,
+                slug: 'super-deluxe',
+                name: 'Super Deluxe Room',
+                short_summary: 'Planned upgraded room category offering an enhanced layout for guests seeking additional space during multi-night stays.',
+                planned_quantity: 2,
+                is_inventory_verified: 0,
+                vibe_tag: 'Upgraded Space',
+                concept_hue: 'from-forest-950 via-forest-900 to-forest-800'
+            },
+            {
+                id: 3,
+                slug: 'suite',
+                name: 'Suite',
+                short_summary: 'Planned spacious suite category designed for extended stays, families, and guests desiring generous living space and privacy.',
+                planned_quantity: 4,
+                is_inventory_verified: 0,
+                vibe_tag: 'Spacious Suite Concept',
+                concept_hue: 'from-forest-950 via-forest-800 to-gold-600/40'
+            }
+        ];
+
+        const FAQS = [
+            {
+                q: 'Is Hotel King Choice open for stays right now?',
+                a: 'No. Hotel King Choice is currently under construction in Chikhloli, Ambernath West. We do not have a confirmed opening date yet.'
+            },
+            {
+                q: 'Can I book a room online or make an advance payment today?',
+                a: 'No. Online reservations and payments are strictly disabled until construction is completed, operational room inventory and tariffs are finalised, and the hotel authorises launch.'
+            },
+            {
+                q: 'How can I enquire about future stays or construction progress?',
+                a: 'You can speak directly with us via voice call at +91 9699066190. Please note that this telephone number is published for voice calls; do not assume WhatsApp messaging is supported.'
+            },
+            {
+                q: 'Are the room numbers (14 Deluxe, 2 Super Deluxe, 4 Suites) final?',
+                a: 'Those numbers reflect earlier pre-launch planning and are treated as unverified until final operational inventory and occupancy limits are confirmed prior to opening.'
+            },
+            {
+                q: 'Is the hotel location pin verified on Google Maps?',
+                a: 'Not yet. Our site is located opposite the Tata Motors Car Service Center, near Jambhul Phata, Chikhloli, on Kalyan–Badlapur Road in Ambernath West. Our map button opens a general area landmark search rather than a verified hotel pin.'
+            }
+        ];
+
+        function App() {
+            const [rooms, setRooms] = useState(FALLBACK_ROOMS);
+            const [apiConnected, setApiConnected] = useState(false);
+            const [activeFilter, setActiveFilter] = useState('all');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+            // Demo Explorer state (strictly client-side educational preview)
+            const [demoCheckIn, setDemoCheckIn] = useState('');
+            const [demoCheckOut, setDemoCheckOut] = useState('');
+            const [demoCategory, setDemoCategory] = useState('deluxe');
+            const [demoNotice, setDemoNotice] = useState(null);
+
+            // Accessible Modals
+            const [activeModal, setActiveModal] = useState(null); // 'enquiry' | 'privacy' | null
+            const [selectedRoomForModal, setSelectedRoomForModal] = useState(null);
+
+            useEffect(() => {
+                fetch('api.php?action=status')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.ok && Array.isArray(data.room_categories) && data.room_categories.length > 0) {
+                            const merged = data.room_categories.map(dbRoom => {
+                                const fallback = FALLBACK_ROOMS.find(f => f.slug === dbRoom.slug) || FALLBACK_ROOMS[0];
+                                return { ...fallback, ...dbRoom };
+                            });
+                            setRooms(merged);
+                            setApiConnected(true);
+                        }
+                    })
+                    .catch(() => {
+                        setApiConnected(false);
+                    });
+            }, []);
+
+            const filteredRooms = activeFilter === 'all'
+                ? rooms
+                : rooms.filter(r => r.slug === activeFilter);
+
+            const handleDemoPreview = (e) => {
+                e.preventDefault();
+                const chosen = rooms.find(r => r.slug === demoCategory) || rooms[0];
+                setDemoNotice({
+                    roomName: chosen.name,
+                    plannedQty: chosen.planned_quantity,
+                    datesText: (demoCheckIn && demoCheckOut)
+                        ? `Selected sample dates (${demoCheckIn} to ${demoCheckOut})`
+                        : 'No sample dates entered'
+                });
+            };
+
+            const openRoomModal = (room) => {
+                setSelectedRoomForModal(room);
+                setActiveModal('enquiry');
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* 1. Prominent Under-Construction Top Banner */}
+                    <div className="bg-forest-950 text-cream-100 border-b border-gold-500/50 px-4 py-2.5 text-xs sm:text-sm">
+                        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                                <span className="inline-flex items-center gap-1.5 bg-gold-500 text-forest-950 font-bold px-2.5 py-0.5 rounded-full text-[11px] tracking-wider uppercase">
+                                    <span className="w-2 h-2 rounded-full bg-forest-950 animate-pulse"></span>
+                                    Under Construction
+                                </span>
+                                <p className="text-cream-200">
+                                    <strong className="text-white">Pre-Launch Notice:</strong> Hotel King Choice (Ambernath West) has no confirmed opening date yet. Online reservations &amp; payments are disabled.
+                                </p>
+                            </div>
+                            <a href="tel:+919699066190" className="text-gold-400 hover:text-gold-500 font-semibold whitespace-nowrap underline underline-offset-4">
+                                Call +91 9699066190
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* 2. Sticky Glassmorphism Header */}
+                    <header className="sticky top-0 z-40 bg-forest-900/95 backdrop-blur-md border-b border-white/10 text-cream-100">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                            <a href="#top" className="flex items-center gap-3 group">
+                                <div className="w-11 h-11 rounded-xl bg-forest-950 border border-gold-500 flex items-center justify-center font-serif font-bold text-xl text-gold-400 group-hover:scale-105 transition">
+                                    KC
+                                </div>
+                                <div>
+                                    <span className="block font-serif text-xl sm:text-2xl font-bold tracking-wide text-white">
+                                        Hotel King Choice
+                                    </span>
+                                    <span className="block text-[11px] uppercase tracking-widest text-cream-300">
+                                        Chikhloli • Ambernath West
+                                    </span>
+                                </div>
+                            </a>
+
+                            {/* Desktop Nav */}
+                            <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-cream-200" aria-label="Main Navigation">
+                                <a href="#about" className="hover:text-gold-400 transition">Future Vision</a>
+                                <a href="#rooms" className="hover:text-gold-400 transition">Planned Rooms</a>
+                                <a href="#concepts" className="hover:text-gold-400 transition">Illustrative Concepts</a>
+                                <a href="#facts" className="hover:text-gold-400 transition">Verified Info</a>
+                                <a href="#location" className="hover:text-gold-400 transition">Location</a>
+                                <a href="#faq" className="hover:text-gold-400 transition">FAQs</a>
+                            </nav>
+
+                            <div className="hidden md:flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => { setSelectedRoomForModal(null); setActiveModal('enquiry'); }}
+                                    className="px-4 py-2 rounded-lg border border-gold-500/60 text-cream-100 hover:bg-gold-500 hover:text-forest-950 text-sm font-semibold transition"
+                                >
+                                    Enquiry Guide
+                                </button>
+                                <a
+                                    href="tel:+919699066190"
+                                    className="px-4 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-forest-950 text-sm font-bold transition shadow-md"
+                                >
+                                    Call +91 9699066190
+                                </a>
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <button
+                                type="button"
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                className="md:hidden px-3 py-2 rounded-lg border border-gold-500/60 text-cream-100 text-sm font-semibold"
+                                aria-expanded={mobileMenuOpen}
+                            >
+                                {mobileMenuOpen ? 'Close ✕' : 'Menu ☰'}
+                            </button>
+                        </div>
+
+                        {/* Mobile Drawer */}
+                        {mobileMenuOpen && (
+                            <div className="md:hidden bg-forest-950 border-t border-white/10 px-4 py-4 space-y-3">
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <a href="#about" onClick={() => setMobileMenuOpen(false)} className="p-2 rounded hover:bg-white/5">Future Vision</a>
+                                    <a href="#rooms" onClick={() => setMobileMenuOpen(false)} className="p-2 rounded hover:bg-white/5">Planned Rooms</a>
+                                    <a href="#concepts" onClick={() => setMobileMenuOpen(false)} className="p-2 rounded hover:bg-white/5">Illustrative Concepts</a>
+                                    <a href="#facts" onClick={() => setMobileMenuOpen(false)} className="p-2 rounded hover:bg-white/5">Verified Info</a>
+                                    <a href="#location" onClick={() => setMobileMenuOpen(false)} className="p-2 rounded hover:bg-white/5">Location</a>
+                                    <a href="#faq" onClick={() => setMobileMenuOpen(false)} className="p-2 rounded hover:bg-white/5">FAQs</a>
+                                </div>
+                                <div className="pt-2 flex flex-col gap-2">
+                                    <a href="tel:+919699066190" className="w-full text-center py-2.5 rounded-lg bg-gold-500 text-forest-950 font-bold">
+                                        Call +91 9699066190
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setMobileMenuOpen(false); setSelectedRoomForModal(null); setActiveModal('enquiry'); }}
+                                        className="w-full py-2 rounded-lg border border-gold-500/60 text-cream-100 text-sm font-semibold"
+                                    >
+                                        Open Enquiry Dialog
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </header>
+
+                    {/* 3. Hero Section + Safe Pre-Launch Stay Explorer */}
+                    <section id="top" className="relative bg-gradient-to-br from-forest-950 via-forest-900 to-forest-800 text-cream-100 py-16 lg:py-24 overflow-hidden">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-12 gap-12 items-center">
+                            <div className="lg:col-span-7 space-y-6">
+                                <div className="inline-flex flex-wrap items-center gap-2">
+                                    <span className="px-3 py-1 rounded-full bg-white/10 border border-gold-500/40 text-gold-400 text-xs font-semibold uppercase tracking-widest">
+                                        Future Hotel • Ambernath West
+                                    </span>
+                                    {apiConnected && (
+                                        <span className="px-3 py-1 rounded-full bg-emerald-950/90 border border-emerald-500/40 text-emerald-300 text-xs font-medium">
+                                            ● Live MySQL Pre-Launch Feed Active
+                                        </span>
+                                    )}
+                                </div>
+
+                                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+                                    Thoughtful Comfort, <span className="text-gold-400 italic font-normal">Currently in the Making.</span>
+                                </h1>
+
+                                <blockquote className="border-l-4 border-gold-500 bg-white/5 p-5 rounded-r-xl font-serif text-xl sm:text-2xl italic text-cream-100">
+                                    “You paid for a budget hotel. You slept like you paid for more.”
+                                </blockquote>
+
+                                <p className="text-cream-200 text-base sm:text-lg leading-relaxed max-w-2xl">
+                                    Owned and developed by <strong className="text-white">Pravin Telange</strong>, <strong className="text-white">Hotel King Choice</strong> is a new hotel currently under construction opposite the Tata Motors Car Service Center, near Jambhul Phata, Chikhloli, on Kalyan–Badlapur Road. We are designing a calm, sleep-first stay experience for business travellers and families visiting Ambernath West.
+                                </p>
+
+                                <div className="flex flex-wrap gap-4 pt-2">
+                                    <a
+                                        href="tel:+919699066190"
+                                        className="px-6 py-3.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-forest-950 font-bold text-base shadow-lg transition"
+                                    >
+                                        Call Hotel Desk: +91 9699066190
+                                    </a>
+                                    <a
+                                        href="#rooms"
+                                        className="px-6 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold text-base transition"
+                                    >
+                                        Explore Planned Rooms ↓
+                                    </a>
+                                </div>
+
+                                <p className="text-xs text-cream-300">
+                                    <strong>Transparency Guarantee:</strong> No confirmed opening date yet • No online deposits collected • Telephone enquiries welcome via voice call.
+                                </p>
+                            </div>
+
+                            {/* Interactive Pre-Launch Stay Explorer Card */}
+                            <div className="lg:col-span-5">
+                                <div className="bg-cream-100 text-forest-950 rounded-2xl p-6 sm:p-8 shadow-2xl border-2 border-gold-500">
+                                    <div className="flex items-center justify-between gap-2 mb-3">
+                                        <span className="px-2.5 py-1 rounded bg-forest-900 text-gold-400 font-bold text-[11px] uppercase tracking-wider">
+                                            Interactive Demo Preview
+                                        </span>
+                                        <span className="text-xs font-semibold text-forest-800">
+                                            Bookings Disabled
+                                        </span>
+                                    </div>
+
+                                    <h2 className="font-serif text-2xl font-bold text-forest-950 mb-2">
+                                        Future Stay Explorer
+                                    </h2>
+                                    <p className="text-xs bg-cream-200 border-l-4 border-gold-600 p-3 rounded text-forest-900 mb-5">
+                                        <strong>Pre-Launch Notice:</strong> Selecting dates below is for previewing our planned categories only. <strong>Availability is not checked, and your details are never sent or saved.</strong>
+                                    </p>
+
+                                    <form onSubmit={handleDemoPreview} className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <label htmlFor="demo-cin" className="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1">
+                                                    Sample Check-In
+                                                </label>
+                                                <input
+                                                    id="demo-cin"
+                                                    type="date"
+                                                    value={demoCheckIn}
+                                                    onChange={e => setDemoCheckIn(e.target.value)}
+                                                    className="w-full rounded-lg border border-cream-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-forest-800"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label htmlFor="demo-cout" className="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1">
+                                                    Sample Check-Out
+                                                </label>
+                                                <input
+                                                    id="demo-cout"
+                                                    type="date"
+                                                    value={demoCheckOut}
+                                                    onChange={e => setDemoCheckOut(e.target.value)}
+                                                    className="w-full rounded-lg border border-cream-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-forest-800"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="demo-cat" className="block text-xs font-bold uppercase tracking-wider text-forest-800 mb-1">
+                                                Planned Room Category
+                                            </label>
+                                            <select
+                                                id="demo-cat"
+                                                value={demoCategory}
+                                                onChange={e => setDemoCategory(e.target.value)}
+                                                className="w-full rounded-lg border border-cream-300 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-forest-800"
+                                            >
+                                                {rooms.map(r => (
+                                                    <option key={r.slug} value={r.slug}>
+                                                        {r.name} (Earlier Planned Count: {r.planned_quantity} — Unverified)
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            className="w-full py-3 rounded-xl bg-forest-900 hover:bg-forest-800 text-cream-100 font-bold text-sm transition"
+                                        >
+                                            Preview Planned Category (Does Not Book)
+                                        </button>
+                                    </form>
+
+                                    {demoNotice && (
+                                        <div className="mt-4 p-4 rounded-xl bg-forest-950 text-cream-100 text-xs space-y-1.5 border border-gold-500" role="status">
+                                            <div className="font-bold text-gold-400 text-sm">
+                                                Preview: {demoNotice.roomName}
+                                            </div>
+                                            <p>
+                                                {demoNotice.datesText}. Earlier planned quantity is <strong>{demoNotice.plannedQty} units (unverified)</strong>.
+                                            </p>
+                                            <p className="text-cream-300">
+                                                Because Hotel King Choice is under construction, live availability was <strong>not</strong> checked and nothing was transmitted or saved. Call <a href="tel:+919699066190" className="text-gold-400 underline font-semibold">+91 9699066190</a> for enquiries.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 4. Gen-Z Bento Grid: Future Hotel Introduction */}
+                    <section id="about" className="py-16 lg:py-20 bg-cream-200/70 border-b border-cream-300">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="max-w-3xl mx-auto text-center mb-12">
+                                <p className="text-xs font-bold uppercase tracking-widest text-gold-600 mb-2">
+                                    Designed for Modern Travellers
+                                </p>
+                                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest-950">
+                                    A Future Hotel Built Around Rest &amp; Honesty
+                                </h2>
+                                <p className="mt-3 text-forest-800 text-base">
+                                    No exaggerated star claims or fake pre-launch discounts. Here is what we are actively building in Chikhloli, Ambernath West.
+                                </p>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div className="bg-cream-50 p-7 rounded-2xl border border-cream-300 shadow-sm">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-forest-900 text-gold-400 text-xs font-bold mb-4">
+                                        01 • Sleep Quality
+                                    </span>
+                                    <h3 className="font-serif text-2xl font-bold text-forest-950 mb-2">
+                                        The Brand Promise
+                                    </h3>
+                                    <p className="text-sm text-forest-800 leading-relaxed">
+                                        <em>“You paid for a budget hotel. You slept like you paid for more.”</em> Every planning decision prioritises restful bedding, clean acoustics, and a calm interior palette.
+                                    </p>
+                                </div>
+
+                                <div className="bg-cream-50 p-7 rounded-2xl border border-cream-300 shadow-sm">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-forest-900 text-gold-400 text-xs font-bold mb-4">
+                                        02 • Three Categories
+                                    </span>
+                                    <h3 className="font-serif text-2xl font-bold text-forest-950 mb-2">
+                                        Deluxe, Super Deluxe &amp; Suite
+                                    </h3>
+                                    <p className="text-sm text-forest-800 leading-relaxed">
+                                        We are planning three clear accommodation tiers. Final operational room counts, occupancy limits, and tariffs will be verified and published prior to launch.
+                                    </p>
+                                </div>
+
+                                <div className="bg-cream-50 p-7 rounded-2xl border border-cream-300 shadow-sm">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-forest-900 text-gold-400 text-xs font-bold mb-4">
+                                        03 • Strategic Corridor
+                                    </span>
+                                    <h3 className="font-serif text-2xl font-bold text-forest-950 mb-2">
+                                        Kalyan–Badlapur Road
+                                    </h3>
+                                    <p className="text-sm text-forest-800 leading-relaxed">
+                                        Positioned opposite the Tata Motors Car Service Center near Jambhul Phata in Chikhloli, offering straightforward road access across Ambernath West.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 5. Planned Room Categories with Interactive React Filters */}
+                    <section id="rooms" className="py-16 lg:py-20">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-gold-600 mb-2">
+                                        Planned Accommodation
+                                    </p>
+                                    <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest-950">
+                                        Planned Room Categories
+                                    </h2>
+                                    <p className="mt-2 text-sm text-forest-800 max-w-2xl">
+                                        Earlier planned inventory (14 Deluxe, 2 Super Deluxe, and 4 Suites) is displayed below as <strong>unverified pre-opening planning figures</strong> until operational confirmation.
+                                    </p>
+                                </div>
+
+                                {/* Interactive Category Filter Pills */}
+                                <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Filter planned room categories">
+                                    {[
+                                        { key: 'all', label: 'All Categories (3)' },
+                                        { key: 'deluxe', label: 'Deluxe' },
+                                        { key: 'super-deluxe', label: 'Super Deluxe' },
+                                        { key: 'suite', label: 'Suite' }
+                                    ].map(tab => (
+                                        <button
+                                            key={tab.key}
+                                            type="button"
+                                            onClick={() => setActiveFilter(tab.key)}
+                                            className={`px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition ${
+                                                activeFilter === tab.key
+                                                    ? 'bg-forest-900 text-gold-400 shadow'
+                                                    : 'bg-cream-200 text-forest-900 hover:bg-cream-300'
+                                            }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-8">
+                                {filteredRooms.map(room => (
+                                    <article
+                                        key={room.slug}
+                                        className="bg-white rounded-2xl overflow-hidden border border-cream-300 shadow-sm hover:shadow-xl transition flex flex-col"
+                                    >
+                                        {/* Clearly Labelled Illustrative Interior Concept Visual */}
+                                        <div className={`relative h-52 bg-gradient-to-br ${room.concept_hue || 'from-forest-900 to-forest-800'} p-5 flex flex-col justify-between text-cream-100`}>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="px-2.5 py-1 rounded bg-forest-950/90 border border-gold-500/60 text-gold-400 text-[10px] font-bold uppercase tracking-wider">
+                                                    Illustrative Concept — Not Actual Photo
+                                                </span>
+                                            </div>
+
+                                            {/* Minimal Architectural Concept Wireframe SVG */}
+                                            <div className="my-auto flex items-center justify-center opacity-90">
+                                                <div className="w-full max-w-[220px] h-24 rounded-lg border border-gold-400/60 bg-white/5 p-3 flex flex-col justify-between">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[11px] uppercase tracking-widest text-gold-400 font-semibold">
+                                                            {room.vibe_tag || 'Planned Layout'}
+                                                        </span>
+                                                        <span className="w-2 h-2 rounded-full bg-gold-400"></span>
+                                                    </div>
+                                                    <div className="font-serif text-lg font-bold text-white">
+                                                        {room.name} Concept
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-[11px] text-cream-200 flex justify-between">
+                                                <span>Actual photography pending completion</span>
+                                                <span className="text-gold-400 font-semibold">Pre-Launch</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="p-6 flex-1 flex flex-col justify-between space-y-5">
+                                            <div>
+                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                    <h3 className="font-serif text-2xl font-bold text-forest-950">
+                                                        {room.name}
+                                                    </h3>
+                                                    <span className="px-2.5 py-0.5 rounded bg-cream-200 text-forest-900 border border-gold-500/50 text-xs font-bold whitespace-nowrap">
+                                                        Tariff Pending
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-forest-800 leading-relaxed">
+                                                    {room.short_summary}
+                                                </p>
+
+                                                <dl className="mt-4 pt-4 border-t border-cream-200 space-y-2 text-xs">
+                                                    <div className="flex justify-between">
+                                                        <dt className="font-bold text-forest-900">Earlier Planned Count:</dt>
+                                                        <dd className="text-forest-800">{room.planned_quantity} Units (Unverified)</dd>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <dt className="font-bold text-forest-900">Occupancy Limit:</dt>
+                                                        <dd className="text-forest-800">Pending Confirmation</dd>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <dt className="font-bold text-forest-900">Verified Amenities:</dt>
+                                                        <dd className="text-forest-800">Pending Final Fit-Out</dd>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <dt className="font-bold text-forest-900">Reservations:</dt>
+                                                        <dd className="text-amber-800 font-semibold">Disabled Pre-Launch</dd>
+                                                    </div>
+                                                </dl>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2.5 pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openRoomModal(room)}
+                                                    className="py-2.5 px-3 rounded-xl border border-forest-900 text-forest-900 hover:bg-forest-900 hover:text-cream-100 text-xs font-bold transition"
+                                                >
+                                                    Category Details
+                                                </button>
+                                                <a
+                                                    href="tel:+919699066190"
+                                                    className="py-2.5 px-3 rounded-xl bg-gold-500 hover:bg-gold-400 text-forest-950 text-center text-xs font-bold transition"
+                                                >
+                                                    Call to Enquire
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 6. Clearly Labelled Illustrative Interiors Notice */}
+                    <section id="concepts" className="py-16 bg-forest-900 text-cream-100">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-12 gap-8 items-center">
+                            <div className="md:col-span-7 space-y-4">
+                                <span className="px-3 py-1 rounded-full bg-gold-500/20 border border-gold-500 text-gold-400 text-xs font-bold uppercase tracking-wider">
+                                    Visual Honesty Policy
+                                </span>
+                                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-white">
+                                    Why We Label All Pre-Launch Visuals as Illustrative Concepts
+                                </h2>
+                                <p className="text-cream-200 text-sm sm:text-base leading-relaxed">
+                                    Because Hotel King Choice is actively under construction, genuine photographs of finished guest rooms and public areas are not yet available. Rather than using misleading stock photos of other hotels, we use clearly badged illustrative design concepts until our own photography is ready.
+                                </p>
+                            </div>
+                            <div className="md:col-span-5 bg-forest-950 border border-gold-500/50 rounded-2xl p-6 space-y-4">
+                                <h3 className="font-serif text-xl font-bold text-gold-400">
+                                    Planned Design Palette
+                                </h3>
+                                <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                                    <div className="p-3 rounded-xl bg-forest-800 border border-white/10">
+                                        <div className="w-8 h-8 rounded-full bg-forest-900 border border-white mx-auto mb-2"></div>
+                                        Deep Forest
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-cream-100 text-forest-950">
+                                        <div className="w-8 h-8 rounded-full bg-cream-200 border border-forest-900 mx-auto mb-2"></div>
+                                        Warm Cream
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-gold-500 text-forest-950 font-semibold">
+                                        <div className="w-8 h-8 rounded-full bg-gold-600 border border-forest-950 mx-auto mb-2"></div>
+                                        Restrained Gold
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 7. Verified Hotel Facts vs Pending Pre-Launch Details */}
+                    <section id="facts" className="py-16 lg:py-20 bg-cream-200/60 border-b border-cream-300">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="text-center max-w-2xl mx-auto mb-12">
+                                <p className="text-xs font-bold uppercase tracking-widest text-gold-600 mb-2">
+                                    Verified Fact Sheet
+                                </p>
+                                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest-950">
+                                    Confirmed Details &amp; Pending Pre-Opening Items
+                                </h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-8">
+                                <div className="bg-white p-7 rounded-2xl border-t-4 border-forest-800 shadow-sm">
+                                    <h3 className="font-serif text-2xl font-bold text-forest-950 mb-4">
+                                        ✓ Confirmed Facts
+                                    </h3>
+                                    <ul className="space-y-3 text-sm text-forest-900">
+                                        <li><strong>Hotel Name:</strong> Hotel King Choice</li>
+                                        <li><strong>Owner:</strong> Pravin Telange</li>
+                                        <li><strong>Official Domain:</strong> <code>kingchoicehotel.com</code></li>
+                                        <li><strong>Telephone (Voice Call):</strong> <a href="tel:+919699066190" className="text-forest-800 font-bold underline">+91 9699066190</a></li>
+                                        <li><strong>Site Address:</strong> Opp. Tata Motors Car Service Center, near Jambhul Phata, Chikhloli, Kalyan–Badlapur Road, Ambernath West, Maharashtra, India</li>
+                                        <li><strong>Current Status:</strong> Under Construction</li>
+                                        <li><strong>Planned Categories:</strong> Deluxe, Super Deluxe, and Suite</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-white p-7 rounded-2xl border-t-4 border-gold-500 shadow-sm">
+                                    <h3 className="font-serif text-2xl font-bold text-forest-950 mb-4">
+                                        ⏳ Pending Final Confirmation Before Launch
+                                    </h3>
+                                    <ul className="space-y-3 text-sm text-forest-900">
+                                        <li><strong>Opening Date:</strong> Not yet confirmed</li>
+                                        <li><strong>Verified Operational Room Count:</strong> Earlier planning listed 14 Deluxe, 2 Super Deluxe, and 4 Suites (unverified until operational sign-off)</li>
+                                        <li><strong>Room Tariffs &amp; Taxes:</strong> Pending publication</li>
+                                        <li><strong>Verified Amenities &amp; Occupancy Limits:</strong> Pending final inspection</li>
+                                        <li><strong>Official Email &amp; Booking Policies:</strong> Pending publication</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 8. Location & Area Landmark Map (Distinguished from Verified Hotel Pin) */}
+                    <section id="location" className="py-16 lg:py-20">
+                        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="bg-white rounded-2xl p-8 sm:p-10 border border-cream-300 shadow-sm">
+                                <p className="text-xs font-bold uppercase tracking-widest text-gold-600 mb-2">
+                                    Address &amp; Navigation
+                                </p>
+                                <h2 className="font-serif text-3xl font-bold text-forest-950 mb-4">
+                                    Location in Ambernath West
+                                </h2>
+                                <address className="not-italic text-base text-forest-900 leading-relaxed mb-6">
+                                    <strong>Hotel King Choice</strong><br />
+                                    Opp. Tata Motors Car Service Center, near Jambhul Phata,<br />
+                                    Chikhloli, Kalyan–Badlapur Road,<br />
+                                    Ambernath West, Maharashtra, India
+                                </address>
+
+                                <div className="bg-cream-200 border-l-4 border-gold-500 p-4 rounded-r-xl text-xs sm:text-sm text-forest-900 mb-6">
+                                    <strong>Map Pin Verification Notice:</strong> The exact Google Maps pin for Hotel King Choice is <strong>not yet verified</strong>. The button below opens a general area landmark search (<em>Tata Motors Car Service Center, Jambhul Phata, Chikhloli, Ambernath West</em>) rather than a verified hotel pin.
+                                </div>
+
+                                <div className="flex flex-wrap gap-4">
+                                    <a
+                                        href="https://www.google.com/maps/search/?api=1&query=Tata+Motors+Car+Service+Center+Jambhul+Phata+Chikhloli+Kalyan+Badlapur+Road+Ambernath+West+Maharashtra"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-5 py-3 rounded-xl bg-forest-900 hover:bg-forest-800 text-cream-100 text-sm font-bold transition"
+                                    >
+                                        Open General Area Landmark Map ↗
+                                    </a>
+                                    <a
+                                        href="tel:+919699066190"
+                                        className="px-5 py-3 rounded-xl bg-gold-500 hover:bg-gold-400 text-forest-950 text-sm font-bold transition"
+                                    >
+                                        Call for Directions: +91 9699066190
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 9. FAQs */}
+                    <section id="faq" className="py-16 bg-cream-200/70 border-t border-cream-300">
+                        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="text-center mb-10">
+                                <p className="text-xs font-bold uppercase tracking-widest text-gold-600 mb-2">
+                                    Common Questions
+                                </p>
+                                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-forest-950">
+                                    Construction &amp; Pre-Launch FAQs
+                                </h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                {FAQS.map((item, idx) => (
+                                    <details key={idx} className="group bg-white rounded-xl border border-cream-300 p-5" open={idx === 0}>
+                                        <summary className="font-bold text-forest-950 cursor-pointer flex justify-between items-center">
+                                            <span>{item.q}</span>
+                                            <span className="text-gold-600 font-bold ml-2">+</span>
+                                        </summary>
+                                        <p className="mt-3 text-sm text-forest-800 leading-relaxed">
+                                            {item.a}
+                                        </p>
+                                    </details>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 10. Footer */}
+                    <footer className="bg-forest-950 text-cream-200 py-12 border-t-2 border-gold-500 mt-auto">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-8">
+                            <div>
+                                <h3 className="font-serif text-2xl font-bold text-white mb-2">Hotel King Choice</h3>
+                                <p className="text-gold-400 italic font-serif text-lg mb-3">
+                                    “You paid for a budget hotel. You slept like you paid for more.”
+                                </p>
+                                <p className="text-xs text-cream-300">
+                                    Owner: Pravin Telange • Status: Under Construction
+                                </p>
+                            </div>
+
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-gold-400 mb-2">Location</h4>
+                                <p className="text-xs text-cream-200 leading-relaxed">
+                                    Opp. Tata Motors Car Service Center, near Jambhul Phata, Chikhloli, Kalyan–Badlapur Road, Ambernath West, Maharashtra, India
+                                </p>
+                            </div>
+
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-gold-400 mb-2">Telephone Enquiries</h4>
+                                <a href="tel:+919699066190" className="text-lg font-bold text-white hover:text-gold-400 block mb-3">
+                                    +91 9699066190
+                                </a>
+                                <div className="flex flex-wrap gap-4 text-xs underline text-cream-300">
+                                    <button type="button" onClick={() => { setSelectedRoomForModal(null); setActiveModal('enquiry'); }}>
+                                        Enquiry Info
+                                    </button>
+                                    <button type="button" onClick={() => setActiveModal('privacy')}>
+                                        Privacy Notice
+                                    </button>
+                                    <a href="admin.php">Admin Portal</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 pt-6 border-t border-white/10 text-center text-xs text-cream-300">
+                            &copy; {new Date().getFullYear()} Hotel King Choice (kingchoicehotel.com). Online reservations and payments are disabled during construction.
+                        </div>
+                    </footer>
+
+                    {/* Accessible Modal Dialogs */}
+                    {activeModal && (
+                        <div
+                            className="fixed inset-0 z-50 bg-forest-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+                            role="dialog"
+                            aria-modal="true"
+                        >
+                            <div className="bg-cream-100 text-forest-950 max-w-lg w-full rounded-2xl border-2 border-gold-500 p-6 shadow-2xl space-y-4">
+                                <div className="flex items-center justify-between border-b border-cream-300 pb-3">
+                                    <h3 className="font-serif text-2xl font-bold">
+                                        {activeModal === 'privacy' ? 'Privacy & Pre-Launch Notice' : 'Future-Stay Enquiry Information'}
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveModal(null)}
+                                        className="text-xl font-bold px-2 hover:text-gold-600"
+                                        aria-label="Close modal"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+
+                                {activeModal === 'enquiry' ? (
+                                    <div className="space-y-3 text-sm">
+                                        {selectedRoomForModal && (
+                                            <div className="p-3 rounded-xl bg-white border border-cream-300">
+                                                <div className="font-bold text-forest-900">
+                                                    Category Selected: {selectedRoomForModal.name}
+                                                </div>
+                                                <div className="text-xs text-forest-800 mt-1">
+                                                    Earlier Planned Count: {selectedRoomForModal.planned_quantity} units (unverified until operational confirmation). Tariffs and occupancy limits are pending.
+                                                </div>
+                                            </div>
+                                        )}
+                                        <p className="bg-cream-200 p-3 rounded-lg border-l-4 border-gold-500 text-xs">
+                                            <strong>Under Construction:</strong> Online bookings and payments are disabled until Hotel King Choice authorises launch.
+                                        </p>
+                                        <p>
+                                            For future-stay enquiries or project updates, please call our official telephone number directly:
+                                        </p>
+                                        <a
+                                            href="tel:+919699066190"
+                                            className="block w-full text-center py-3 rounded-xl bg-gold-500 hover:bg-gold-400 text-forest-950 font-bold"
+                                        >
+                                            Call +91 9699066190
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 text-xs sm:text-sm text-forest-900">
+                                        <p>
+                                            <strong>1. No Pre-Launch Data Collection:</strong> While Hotel King Choice is under construction and online reservations are disabled, this website does not collect, transmit, or store personal guest booking data or payment details.
+                                        </p>
+                                        <p>
+                                            <strong>2. Telephone Calls:</strong> Calling <code>+91 9699066190</code> connects you via standard voice telephone networks. Do not assume WhatsApp is supported on this number.
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="pt-2 text-right">
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveModal(null)}
+                                        className="px-4 py-2 rounded-lg bg-forest-900 text-cream-100 text-xs font-bold"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
